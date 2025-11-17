@@ -3,10 +3,23 @@ import { aiController } from '../controllers/ai.controller.js';
 
 const router = Router();
 
-router.post('/chat', aiController.chat);
+import { chatSchema } from '../validators/chatValidator.js';
+import { summarizeSchema } from '../validators/summarizeValidator.js';
+import { sentimentSchema } from '../validators/sentimentValidator.js';
+import { validateRequest } from '../middleware/expressValidation.js';
+
+
+
+router.post('/chat', validateRequest(chatSchema), aiController.chat);
+
+
 router.post('/generate', aiController.generate);
-router.post('/sentiment', aiController.sentiment);
-router.post('/summarize', aiController.summarize);
+
+
+router.post('/sentiment', validateRequest(sentimentSchema), aiController.sentiment);
+
+
+router.post('/summarize', validateRequest(summarizeSchema), aiController.summarize);
 
 export default router;
 
