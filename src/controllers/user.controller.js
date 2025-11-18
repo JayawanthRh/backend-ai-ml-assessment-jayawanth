@@ -6,6 +6,7 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { commonSchemas } from '../utils/validation.js';
 
+
 const createUserSchema = z.object({
   email: commonSchemas.email,
   name: z.string().min(1).max(100),

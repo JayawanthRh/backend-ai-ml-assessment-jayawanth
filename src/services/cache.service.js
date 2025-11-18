@@ -1,4 +1,17 @@
 class CacheService {
+  
+    getStats() {
+      
+    return {
+      size: this.size(),            
+      maxSize: this.maxSize ?? null, 
+      defaultTtl: this.defaultTtl ?? null, 
+      hits: this.hits ?? null,      
+      misses: this.misses ?? null, 
+      keys: [...this.cache.keys()],
+    };
+  }
+  
   constructor() {
     this.cache = new Map();
     this.defaultTTL = 5 * 60 * 1000;

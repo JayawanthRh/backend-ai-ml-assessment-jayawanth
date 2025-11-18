@@ -3,14 +3,15 @@ import { logger } from '../utils/logger.js';
 import { cacheService } from './cache.service.js';
 import { hash } from '../utils/encryption.js';
 
-// Optimized sentiment word sets for O(1) lookup
+
+
 const POSITIVE_WORDS = new Set(['love', 'great', 'excellent', 'amazing', 'wonderful', 'good', 'happy', 'pleased', 'fantastic', 'awesome', 'brilliant', 'perfect']);
 const NEGATIVE_WORDS = new Set(['hate', 'terrible', 'awful', 'bad', 'sad', 'angry', 'disappointed', 'horrible', 'worst', 'hateful', 'disgusting']);
 
-// Mock AI responses for when OpenAI is not configured
+
 class MockAIService {
   constructor() {
-    this.DELAY_MS = 300; // Reduced delay for better performance
+    this.DELAY_MS = 300; 
   }
 
   async simulateDelay(ms = this.DELAY_MS) {
@@ -19,26 +20,25 @@ class MockAIService {
     });
   }
 
-  async chatCompletion(messages) {
+  async chatCompletion(messages, _model) {
     await this.simulateDelay();
     const lastMessage = messages[messages.length - 1]?.content || '';
     const lowerMessage = lastMessage.toLowerCase();
-    
-    // Optimized response matching
+    // rest stays the same
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
       return 'Hello! How can I help you today?';
     }
     if (lowerMessage.includes('help')) {
-      return 'I\'m here to help! What would you like to know?';
+      return "I'm here to help! What would you like to know?";
     }
     if (lowerMessage.includes('bye') || lowerMessage.includes('goodbye')) {
       return 'Goodbye! Have a great day!';
     }
-    
+
     return `I understand you said: "${lastMessage.substring(0, 100)}${lastMessage.length > 100 ? '...' : ''}". This is a mock response. To use real AI, set OPENAI_API_KEY environment variable.`;
   }
-
-  async generateText(prompt, _systemPrompt) {
+  
+  async generateText(prompt, _systemPrompt, _model) {
     await this.simulateDelay();
     const wordCount = prompt.split(/\s+/).length;
     const preview = prompt.substring(0, 100);
@@ -47,7 +47,7 @@ class MockAIService {
 
   async analyzeSentiment(text) {
     await this.simulateDelay();
-    // Optimized sentiment analysis using Set for O(1) lookups
+
     const words = text.toLowerCase().split(/\W+/);
     let positiveCount = 0;
     let negativeCount = 0;
@@ -72,7 +72,7 @@ class MockAIService {
       return words.slice(0, wordCount).join(' ') + '...';
     }
     
-    // Take first 30% of sentences, but ensure it fits maxLength
+
     const targetSentences = Math.max(1, Math.ceil(sentences.length * 0.3));
     const summary = sentences.slice(0, targetSentences).join('. ').trim();
     
@@ -80,24 +80,24 @@ class MockAIService {
       return summary + (summary.endsWith('.') ? '' : '.');
     }
     
-    // Fallback: truncate to maxLength
+
     return summary.substring(0, maxLength).trim() + '...';
   }
 }
 
-// OpenAI service (optional)
+
 class OpenAIService {
   constructor(apiKey) {
     this.client = null;
     this.initialized = false;
     this.initPromise = null;
-    // Initialize asynchronously
+
     this.initPromise = this.initializeClient(apiKey);
   }
 
   async initializeClient(apiKey) {
     try {
-      // Dynamic import for optional dependency
+
       const openaiModule = await import('openai');
       const OpenAI = openaiModule.default;
       this.client = new OpenAI({ apiKey });
@@ -123,7 +123,7 @@ class OpenAIService {
   async chatCompletion(messages) {
     await this.ensureInitialized();
 
-    // Check cache first
+
     const cacheKey = `chat:${hash(JSON.stringify(messages))}`;
     const cached = cacheService.get(cacheKey);
     if (cached) {
@@ -139,15 +139,14 @@ class OpenAIService {
 
     const result = response.choices[0]?.message?.content || 'No response generated';
     
-    // Cache the result for 5 minutes
+
     cacheService.set(cacheKey, result, 5 * 60 * 1000);
     
     return result;
   }
 
-  async generateText(prompt, systemPrompt) {
+  async generateText(prompt, systemPrompt, model) {
     const messages = [];
-    
     if (systemPrompt) {
       messages.push({ role: 'system', content: systemPrompt });
     }
@@ -169,7 +168,7 @@ class OpenAIService {
   }
 }
 
-// Main AI Service that uses OpenAI if available, otherwise uses mock
+
 class AIService {
   constructor() {
     this.mockFallback = new MockAIService();
@@ -185,33 +184,33 @@ class AIService {
     }
   }
 
-  async chatCompletion(messages) {
+  async chatCompletion(messages, model) {
     try {
-      return await this.service.chatCompletion(messages);
+      return await this.service.chatCompletion(messages, model);
     } catch (error) {
-      // Fallback to mock if OpenAI fails
+
       if (this.useOpenAI) {
         logger.warn('OpenAI request failed, falling back to mock service', error);
-        return this.mockFallback.chatCompletion(messages);
+        return this.mockFallback.chatCompletion(messages, model);
       }
       throw error;
     }
   }
 
-  async generateText(prompt, systemPrompt) {
+  async generateText(prompt, systemPrompt, model) {
     try {
-      return await this.service.generateText(prompt, systemPrompt);
+      return await this.service.generateText(prompt, systemPrompt, model);
     } catch (error) {
       if (this.useOpenAI) {
         logger.warn('OpenAI request failed, falling back to mock service', error);
-        return this.mockFallback.generateText(prompt, systemPrompt);
+        return this.mockFallback.generateText(prompt, systemPrompt, model);
       }
       throw error;
     }
   }
 
   async analyzeSentiment(text) {
-    // Check cache for sentiment analysis
+
     const cacheKey = `sentiment:${hash(text)}`;
     const cached = cacheService.get(cacheKey);
     if (cached) {
@@ -220,7 +219,7 @@ class AIService {
 
     try {
       const result = await this.service.analyzeSentiment(text);
-      cacheService.set(cacheKey, result, 10 * 60 * 1000); // Cache for 10 minutes
+      cacheService.set(cacheKey, result, 10 * 60 * 1000); 
       return result;
     } catch (error) {
       if (this.useOpenAI) {
